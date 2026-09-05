@@ -2,7 +2,7 @@
 
 Un editor de partidas guardadas para [Kenshi](https://store.steampowered.com/app/233860/Kenshi/), con interfaz gráfica de escritorio. Te deja abrir una partida, ver tus escuadrones y personajes, y editar sus estadísticas — sin tocar nada a mano en binario.
 
-Lo interesante del proyecto es que **lee el formato binario propietario de Kenshi (OCS/FCS) sin usar offsets hexadecimales hardcodeados**: en lugar de "el dato está en la posición X", interpreta la estructura real de los records, así que no se rompe si las posiciones cambian entre partidas.
+El proyecto **lee el formato binario propietario de Kenshi (OCS/FCS) sin usar offsets hexadecimales hardcodeados**: en lugar de "el dato está en la posición X", interpreta la estructura real de los records, así que no se rompe si las posiciones cambian entre partidas.
 
 > Herramienta no oficial hecha por un fan. No está afiliada ni respaldada por Lo-Fi Games, los creadores de Kenshi. Haz siempre copia de seguridad de tus partidas (de hecho, la herramienta la hace por ti antes de escribir).
 
@@ -14,7 +14,7 @@ Lo interesante del proyecto es que **lee el formato binario propietario de Kensh
 - **Backup automático** de la carpeta de save antes de escribir cualquier cambio.
 - Puede guardar los cambios como copia, sin sobreescribir tu partida original.
 
-## Cómo está montado
+## Funcionamiento
 
 El proyecto separa la lógica del formato (`core/`) de la interfaz (`gui/`), de modo que el parser del formato está aislado y se puede sustituir sin tocar la GUI:
 
@@ -46,7 +46,7 @@ En Windows también tienes los `.bat` de conveniencia (`run_fase2.bat`).
 
 ## Estado
 
-Versión estable. Lee y edita estadísticas de personajes con backup automático antes de escribir. Una función experimental de copiar/eliminar personajes dentro de un escuadrón está en desarrollo aparte, todavía sin integrar.
+Versión estable. Lee y edita estadísticas de personajes con backup automático antes de escribir. Una función experimental de copiar/eliminar personajes dentro de un escuadrón está en desarrollo aparte, todavía sin integrar (porque no me funciona y rompe con la partida) asi que no se si subirla.
 
 ## Licencia
 
