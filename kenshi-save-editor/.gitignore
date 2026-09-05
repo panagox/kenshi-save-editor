@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+work/
+build/
+dist/
+*.spec
+
+# PyInstaller output
+KenshiSaveEditor*.exe
+
+# Saves personales / datos de prueba
+*.save
+saves/
+test_saves/
+
+# Editores
+.vscode/
+.idea/
