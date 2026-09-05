@@ -46,7 +46,7 @@ En Windows también tienes los `.bat` de conveniencia (`run_fase2.bat`).
 
 ## Estado
 
-La rama `main` es la versión estable. La función de **copiar/eliminar personajes dentro de un escuadrón** es más reciente y está en pruebas — vive en la rama `experimental` hasta que esté bien testeada.
+Versión estable. Lee y edita estadísticas de personajes con backup automático antes de escribir. Una función experimental de copiar/eliminar personajes dentro de un escuadrón está en desarrollo aparte, todavía sin integrar.
 
 ## Licencia
 

@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
-    QInputDialog,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -30,12 +29,6 @@ from PySide6.QtWidgets import (
 )
 
 from kenshi_save_editor.core.character_extractor import extract_characters
-from kenshi_save_editor.core.character_roster_service import (
-    CharacterRosterError,
-    RosterEditResult,
-    copy_character_in_squad,
-    delete_character_from_squad,
-)
 from kenshi_save_editor.core.identity_service import all_numeric_fields, build_character_identity, record_label
 from kenshi_save_editor.core.models import CharacterSummary, SaveAnalysis
 from kenshi_save_editor.core.save_writer_service import save_modified_files, save_modified_files_to_copy
@@ -94,13 +87,6 @@ class MainWindow(QMainWindow):
         self._tree.setHeaderLabels(["Escuadron / Personaje", "Estado", "ID interno"])
         self._tree.header().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self._tree.itemSelectionChanged.connect(self._show_selected_character)
-
-        self._copy_character_button = QPushButton("Copiar personaje")
-        self._copy_character_button.clicked.connect(self._copy_selected_character)
-        self._copy_character_button.setEnabled(False)
-        self._delete_character_button = QPushButton("Eliminar personaje")
-        self._delete_character_button.clicked.connect(self._delete_selected_character)
-        self._delete_character_button.setEnabled(False)
 
         self._details = QTableWidget(0, 2)
         self._details.setHorizontalHeaderLabels(["Campo", "Valor"])
@@ -238,11 +224,6 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(QLabel("Escuadrones"))
         left_layout.addWidget(self._tree_filter)
         left_layout.addWidget(self._tree)
-        character_actions = QHBoxLayout()
-        character_actions.addWidget(self._copy_character_button)
-        character_actions.addWidget(self._delete_character_button)
-        left_layout.addLayout(character_actions)
-
         right = QWidget()
         right_layout = QVBoxLayout(right)
         tabs = QTabWidget()
@@ -359,9 +340,7 @@ class MainWindow(QMainWindow):
         if not isinstance(character, CharacterSummary):
             self._details.setRowCount(0)
             self._clear_stats()
-            self._set_character_action_buttons(False)
             return
-        self._set_character_action_buttons(True)
         rows = [
             ("Nombre", character.name),
             ("Raza", character.race),
@@ -614,113 +593,6 @@ class MainWindow(QMainWindow):
         self._stats_info.setText("Selecciona un personaje para ver estadisticas.")
         self._use_candidate_button.setEnabled(False)
         self._update_save_button_state()
-        self._set_character_action_buttons(False)
-
-    def _set_character_action_buttons(self, enabled: bool) -> None:
-        self._copy_character_button.setEnabled(enabled)
-        self._delete_character_button.setEnabled(enabled)
-
-    def _copy_selected_character(self) -> None:
-        if self._analysis is None or self._current_character is None:
-            return
-        if not self._confirm_no_pending_stats():
-            return
-
-        default_name = f"{self._current_character.name} copia"
-        new_name, accepted = QInputDialog.getText(
-            self,
-            "Copiar personaje",
-            "Nombre del personaje copiado:",
-            text=default_name,
-        )
-        if not accepted:
-            return
-        new_name = new_name.strip() or default_name
-
-        if not self._confirm_roster_operation(
-            "Copiar personaje",
-            f"Se copiara {self._current_character.name} dentro del mismo escuadron como {new_name}.",
-        ):
-            return
-
-        try:
-            result = copy_character_in_squad(self._analysis, self._current_character, new_name=new_name)
-            self._save_roster_result(result, "Personaje copiado")
-        except CharacterRosterError as exc:
-            QMessageBox.warning(self, "No se pudo copiar", str(exc))
-        except Exception as exc:  # noqa: BLE001 - GUI boundary shows any save failure.
-            QMessageBox.critical(self, "Error copiando", str(exc))
-
-    def _delete_selected_character(self) -> None:
-        if self._analysis is None or self._current_character is None:
-            return
-        if not self._confirm_no_pending_stats():
-            return
-        if not self._confirm_roster_operation(
-            "Eliminar personaje",
-            f"Se eliminara {self._current_character.name} del escuadron actual.",
-        ):
-            return
-
-        try:
-            result = delete_character_from_squad(self._analysis, self._current_character)
-            self._save_roster_result(result, "Personaje eliminado")
-        except CharacterRosterError as exc:
-            QMessageBox.warning(self, "No se pudo eliminar", str(exc))
-        except Exception as exc:  # noqa: BLE001 - GUI boundary shows any save failure.
-            QMessageBox.critical(self, "Error eliminando", str(exc))
-
-    def _confirm_no_pending_stats(self) -> bool:
-        if not self._pending_stat_changes:
-            return True
-        QMessageBox.warning(
-            self,
-            "Cambios pendientes",
-            "Guarda o revierte las estadisticas pendientes antes de copiar o eliminar personajes.",
-        )
-        return False
-
-    def _confirm_roster_operation(self, title: str, message: str) -> bool:
-        save_as_copy = self._copy_checkbox.isChecked()
-        create_backup = self._backup_checkbox.isChecked()
-        target_text = (
-            "Se guardara en una copia nueva; la partida original no se tocara."
-            if save_as_copy
-            else "Se guardara sobre la partida actual."
-        )
-        backup_text = (
-            "Se creara backup antes de escribir."
-            if create_backup and not save_as_copy
-            else "No se creara backup porque se guardara en copia."
-            if save_as_copy
-            else "Backup desactivado."
-        )
-        answer = QMessageBox.question(
-            self,
-            title,
-            f"{message}\n\n{target_text}\n{backup_text}\n\nContinuar?",
-        )
-        return answer == QMessageBox.StandardButton.Yes
-
-    def _save_roster_result(self, result: RosterEditResult, title: str) -> None:
-        if self._analysis is None:
-            return
-        if self._copy_checkbox.isChecked():
-            output_path = save_modified_files_to_copy(self._analysis, result.modified_paths)
-            self.open_save_folder(output_path)
-            QMessageBox.information(self, title, f"{result.message}\n\nCopia creada en:\n{output_path}")
-            self.statusBar().showMessage(f"{title}: {output_path}")
-            return
-
-        backup_path = save_modified_files(
-            self._analysis,
-            result.modified_paths,
-            create_backup=self._backup_checkbox.isChecked(),
-        )
-        self.refresh()
-        backup_text = f"\n\nBackup creado en:\n{backup_path}" if backup_path is not None else "\n\nBackup desactivado."
-        QMessageBox.information(self, title, f"{result.message}{backup_text}")
-        self.statusBar().showMessage(title)
 
     def _save_current_stats(self) -> None:
         if self._analysis is None:
